@@ -1,71 +1,56 @@
-// model.ts
-
-// 1. Define the TaskStatus union type
 export type TaskStatus = "todo" | "in-progress" | "done";
 
-// 2. Define the Task interface
 export interface Task {
   id: number;
   title: string;
   status: TaskStatus;
+  createdAt: Date;
 }
 
+const tasks: Task[] = [];
 let nextId = 1;
 
-/**
- * 3. Adds a new task with status "todo" and a unique ID.
- */
-export function addTask(tasks: Task[], title: string): Task[] {
-  const newTask: Task = {
-    id: nextId++,
-    title,
+export function addTask(title: string): Task {
+  const cleanTitle = title.trim();
+
+  if (cleanTitle.length === 0) {
+    throw new Error("A task needs a title.");
+  }
+
+  const task: Task = {
+    id: nextId,
+    title: cleanTitle,
     status: "todo",
+    createdAt: new Date(),
   };
-  return [...tasks, newTask];
+
+  nextId += 1;
+  tasks.unshift(task);
+  return task;
 }
 
-/**
- * 4. Marks a task as "done" by ID.
- */
-export function completeTask(tasks: Task[], id: number): Task[] {
-  return tasks.map((task) =>
-    task.id === id ? { ...task, status: "done" } : task
-  );
+export function advanceTask(id: number): Task | undefined {
+  const task = tasks.find((candidate: Task) => candidate.id === id);
+
+  if (!task) {
+    return undefined;
+  }
+
+  const nextStatus: Record<TaskStatus, TaskStatus> = {
+    todo: "in-progress",
+    "in-progress": "done",
+    done: "done",
+  };
+
+  task.status = nextStatus[task.status];
+  return task;
 }
 
-/**
- * 5. Filters tasks by their status.
- */
-export function filterByStatus(tasks: Task[], status: TaskStatus): Task[] {
-  return tasks.filter((task) => task.status === status);
+export function filterByStatus(status: TaskStatus): Task[] {
+  return tasks.filter((task: Task) => task.status === status);
 }
 
-// -------------------------------------------------------------------
-// EXTRA CUSTOM OPERATIONS (Originality requirement)
-// -------------------------------------------------------------------
-
-/**
- * Deletes a task by ID.
- */
-export function deleteTask(tasks: Task[], id: number): Task[] {
-  return tasks.filter((task) => task.id !== id);
+export function getTasks(): Task[] {
+  return [...tasks];
 }
 
-/**
- * Advances a task through stages: todo -> in-progress -> done.
- */
-export function advanceTask(tasks: Task[], id: number): Task[] {
-  return tasks.map((task) => {
-    if (task.id !== id) return task;
-    const nextStatus: TaskStatus =
-      task.status === "todo" ? "in-progress" : "done";
-    return { ...task, status: nextStatus };
-  });
-}
-
-/**
- * Returns the count of tasks matching a given status.
- */
-export function countByStatus(tasks: Task[], status: TaskStatus): number {
-  return filterByStatus(tasks, status).length;
-}
